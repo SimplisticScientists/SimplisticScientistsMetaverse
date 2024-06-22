@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://dealppqaxgef3"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_xdipp"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_egw3x"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ji8hr"]
+
+[node name="Ground" type="StaticBody3D"]
+physics_material_override = SubResource("PhysicsMaterial_xdipp")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.462158, 0)
+shape = SubResource("BoxShape3D_egw3x")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(10, 0, 0, 0, 2.08165e-12, 0, 0, 0, 10, 0, 0, 0)
+mesh = SubResource("PlaneMesh_ji8hr")

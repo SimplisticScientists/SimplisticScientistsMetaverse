@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://dhbd00mgj84m7"]
+
+[ext_resource type="Script" path="res://Scripts/CharacterMovement.cs" id="1_wd87o"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kwcu7"]
+
+[node name="Character" type="CharacterBody3D"]
+script = ExtResource("1_wd87o")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_kwcu7")
