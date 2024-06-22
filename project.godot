@@ -21,7 +21,7 @@ project/assembly_name="SimplisticScientistsMetaverse"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/bsp_importer/plugin.cfg")
+enabled=PackedStringArray("res://addons/qodot/plugin.cfg", "res://addons/tbloader/plugin.cfg")
 
 [input]
 

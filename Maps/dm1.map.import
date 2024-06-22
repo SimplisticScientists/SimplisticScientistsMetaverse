@@ -1,0 +1,14 @@
+[remap]
+
+importer="qodot.map"
+type="Resource"
+uid="uid://xrvny3mgtexa"
+path="res://.godot/imported/dm1.map-f015da384645da6828cfbd593a19c06c.tres"
+
+[deps]
+
+source_file="res://Maps/dm1.map"
+dest_files=["res://.godot/imported/dm1.map-f015da384645da6828cfbd593a19c06c.tres"]
+
+[params]
+

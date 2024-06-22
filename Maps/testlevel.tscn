@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://e7yy7b6lbpu0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eex8l"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.581924, 0.813243, 0, -0.813243, 0.581924, 0, 5.72075, 0)
+
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="."]
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGCombiner3D"]
+size = Vector3(20.7549, 1, 20.8555)
+material = SubResource("StandardMaterial3D_eex8l")
