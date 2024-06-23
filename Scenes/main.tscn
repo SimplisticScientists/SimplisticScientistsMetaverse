@@ -1,11 +1,65 @@
 [gd_scene load_steps=3 format=3 uid="uid://c35iqd4alp632"]
 
-[ext_resource type="PackedScene" uid="uid://dhbd00mgj84m7" path="res://Scenes/character.tscn" id="1_8hlv2"]
+[ext_resource type="Script" path="res://Scenes/main.cs" id="1_yv6kg"]
 [ext_resource type="PackedScene" uid="uid://1yew50k5gcax" path="res://Scenes/dm1.tscn" id="2_ba6jn"]
 
 [node name="Main" type="Node3D"]
-
-[node name="Character" parent="." instance=ExtResource("1_8hlv2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 71.8681, 2.57243, 14.0681)
+script = ExtResource("1_yv6kg")
+hostButtonPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton")
+joinButtonPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton")
+addressEntryPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/AddressEntry")
+mainMenuPath = NodePath("CanvasLayer/MainMenu")
 
 [node name="Node3D" parent="." instance=ExtResource("2_ba6jn")]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.219846, -0.732884, -0.643854, 5.76992e-08, -0.660002, 0.751264, -0.975535, -0.165163, -0.145099, 0, 50.8326, 0)
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.219846, -0.732884, -0.643854, 5.76992e-08, -0.660002, 0.751264, -0.975535, -0.165163, -0.145099, 49.7019, 10.1303, 0)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 412.0
+offset_top = 225.0
+offset_right = -412.0
+offset_bottom = -225.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/MainMenu/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Main Menu"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HostButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Join"
+
+[node name="AddressEntry" type="LineEdit" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Enter address to join here"
+alignment = 1
+
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton" to="." method="OnHostButtonPressed"]
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton" to="." method="OnJoinButtonPressed"]
