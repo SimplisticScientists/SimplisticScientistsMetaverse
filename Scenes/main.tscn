@@ -1,16 +1,17 @@
 [gd_scene load_steps=3 format=3 uid="uid://c35iqd4alp632"]
 
-[ext_resource type="Script" path="res://Scenes/main.cs" id="1_yv6kg"]
+[ext_resource type="Script" path="res://Scenes/main.cs" id="1_7wagh"]
 [ext_resource type="PackedScene" uid="uid://1yew50k5gcax" path="res://Scenes/dm1.tscn" id="2_ba6jn"]
 
 [node name="Main" type="Node3D"]
-script = ExtResource("1_yv6kg")
+script = ExtResource("1_7wagh")
 hostButtonPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton")
 joinButtonPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton")
 addressEntryPath = NodePath("CanvasLayer/MainMenu/MarginContainer/VBoxContainer/AddressEntry")
 mainMenuPath = NodePath("CanvasLayer/MainMenu")
 
 [node name="Node3D" parent="." instance=ExtResource("2_ba6jn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -66, -25, 2.08165e-12)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.219846, -0.732884, -0.643854, 5.76992e-08, -0.660002, 0.751264, -0.975535, -0.165163, -0.145099, 0, 50.8326, 0)

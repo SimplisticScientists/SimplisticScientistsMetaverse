@@ -3,73 +3,84 @@ using System;
 
 public partial class CharacterMovement : CharacterBody3D
 {
-    [Export]
-    public float Speed = 10.0f;
+    [Export] public float Speed = 10.0f;
+    [Export] public float JumpVelocity = 4.5f;
+    [Export] public float MouseSensitivity = 0.05f;
+    [Export] public float FireRate = 0.1f;
 
-    [Export]
-    public float JumpVelocity = 4.5f;
-
-    [Export]
-    public float MouseSensitivity = 0.05f;
-
-    [Export]
-    public float FireRate = 0.1f;
-
-    private float gravity = ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
-
-    private Camera3D _camera;
-    private bool _canFire = true;
+    private float Gravity => ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
+    private Camera3D Camera;
+    private bool CanFire = true;
+    private bool WasOnFloor;
+    private bool Initialized;
 
     public override void _Ready()
     {
-        _camera = GetNode<Camera3D>("Camera3D");
+        Camera = GetNode<Camera3D>("Camera3D");
         Input.MouseMode = Input.MouseModeEnum.Captured;
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        GD.Print("Initializing player state");
+        GlobalTransform = new Transform3D(GlobalTransform.Basis, new Vector3(0, 10, 0));
+        Velocity = Vector3.Zero;
+        Initialized = true;
+        GD.Print($"Player initialized at position: {GlobalTransform.Origin}");
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        Vector3 velocity = Velocity;
+        if (!Initialized)
+            return;
 
-        if (!IsOnFloor())
-            velocity.Y -= gravity * (float)delta;
+            GD.Print($"W: {Input.IsActionPressed("move_forward")}, A: {Input.IsActionPressed("move_left")}, S: {Input.IsActionPressed("move_backward")}, D: {Input.IsActionPressed("move_right")}");
+            GD.Print($"Jump: {Input.IsActionJustPressed("jump")}");
 
-        if (Input.IsActionJustPressed("jump") && IsOnFloor())
-            velocity.Y = JumpVelocity;
+        var velocity = this.Velocity;
+        var isOnFloor = IsOnFloor();
 
-        Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
-        Vector3 direction = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
-
-        if (direction != Vector3.Zero)
+        if (isOnFloor != WasOnFloor)
         {
-            velocity.X = direction.X * Speed;
-            velocity.Z = direction.Z * Speed;
+            GD.Print($"IsOnFloor changed: {isOnFloor}");
+            WasOnFloor = isOnFloor;
+        }
+
+        if (!isOnFloor)
+        {
+            velocity.Y -= Gravity * (float)delta;
         }
         else
         {
-            velocity.X = Mathf.MoveToward(Velocity.X, 0, Speed);
-            velocity.Z = Mathf.MoveToward(Velocity.Z, 0, Speed);
+            if (velocity.Y < 0)
+            {
+                velocity.Y = 0;
+            }
         }
 
-        Velocity = velocity;
+        // ... (other physics processing)
+
+        this.Velocity = velocity;
         MoveAndSlide();
     }
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion mouseMotion)
+        if (@event is InputEventMouseMotion MouseMotion)
         {
-            RotateY(Mathf.DegToRad(-mouseMotion.Relative.X * MouseSensitivity));
-            _camera.RotateX(Mathf.DegToRad(-mouseMotion.Relative.Y * MouseSensitivity));
-            _camera.Rotation = new Vector3(
-                Mathf.Clamp(_camera.Rotation.X, Mathf.DegToRad(-90), Mathf.DegToRad(90)),
-                _camera.Rotation.Y,
-                _camera.Rotation.Z);
+            RotateY(Mathf.DegToRad(-MouseMotion.Relative.X * MouseSensitivity));
+            Camera.RotateX(Mathf.DegToRad(-MouseMotion.Relative.Y * MouseSensitivity));
+            Camera.Rotation = new Vector3(
+                Mathf.Clamp(Camera.Rotation.X, Mathf.DegToRad(-90), Mathf.DegToRad(90)),
+                Camera.Rotation.Y,
+                Camera.Rotation.Z);
         }
     }
 
     public override void _Process(double delta)
     {
-        if (Input.IsActionPressed("fire") && _canFire)
+        if (Input.IsActionPressed("fire") && CanFire)
         {
             Fire();
         }
@@ -77,9 +88,9 @@ public partial class CharacterMovement : CharacterBody3D
 
     private async void Fire()
     {
-        _canFire = false;
+        CanFire = false;
         GD.Print("Bang!"); // Replace with actual shooting logic later
         await ToSignal(GetTree().CreateTimer(FireRate), SceneTreeTimer.SignalName.Timeout);
-        _canFire = true;
+        CanFire = true;
     }
 }
