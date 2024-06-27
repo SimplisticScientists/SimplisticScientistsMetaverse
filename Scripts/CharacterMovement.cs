@@ -8,78 +8,84 @@ public partial class CharacterMovement : CharacterBody3D
     [Export] public float MouseSensitivity = 0.05f;
     [Export] public float FireRate = 0.1f;
 
-    private float Gravity => ProjectSettings.GetSetting("physics/3d/default_gravity").AsSingle();
+    private float Gravity => (float)ProjectSettings.GetSetting("physics/3d/default_gravity");
     private Camera3D Camera;
     private bool CanFire = true;
-    private bool WasOnFloor;
     private bool Initialized;
 
+    public override void _EnterTree()
+    {
+        SetMultiplayerAuthority(Name.GetHashCode());
+    }
     public override void _Ready()
     {
+        
         Camera = GetNode<Camera3D>("Camera3D");
         Input.MouseMode = Input.MouseModeEnum.Captured;
+        Camera.Current = true;
         Initialize();
     }
 
     public void Initialize()
     {
         GD.Print("Initializing player state");
-        GlobalTransform = new Transform3D(GlobalTransform.Basis, new Vector3(0, 10, 0));
+        GlobalPosition = new Vector3(0, 10, 0);
         Velocity = Vector3.Zero;
         Initialized = true;
-        GD.Print($"Player initialized at position: {GlobalTransform.Origin}");
+        GD.Print($"Player initialized at position: {GlobalPosition}");
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        if (!Initialized)
-            return;
+       
+        Vector3 velocity = Velocity;
 
-            GD.Print($"W: {Input.IsActionPressed("move_forward")}, A: {Input.IsActionPressed("move_left")}, S: {Input.IsActionPressed("move_backward")}, D: {Input.IsActionPressed("move_right")}");
-            GD.Print($"Jump: {Input.IsActionJustPressed("jump")}");
-
-        var velocity = this.Velocity;
-        var isOnFloor = IsOnFloor();
-
-        if (isOnFloor != WasOnFloor)
-        {
-            GD.Print($"IsOnFloor changed: {isOnFloor}");
-            WasOnFloor = isOnFloor;
-        }
-
-        if (!isOnFloor)
-        {
+        if (!IsOnFloor())
             velocity.Y -= Gravity * (float)delta;
+
+        if (Input.IsActionJustPressed("jump") && IsOnFloor())
+            velocity.Y = JumpVelocity;
+
+        Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_backward");
+        Vector3 direction = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
+        if (direction != Vector3.Zero)
+        {
+            velocity.X = direction.X * Speed;
+            velocity.Z = direction.Z * Speed;
         }
         else
         {
-            if (velocity.Y < 0)
-            {
-                velocity.Y = 0;
-            }
+            velocity.X = Mathf.MoveToward(velocity.X, 0, Speed);
+            velocity.Z = Mathf.MoveToward(velocity.Z, 0, Speed);
         }
 
-        // ... (other physics processing)
-
-        this.Velocity = velocity;
+        Velocity = velocity;
         MoveAndSlide();
+
+        Rpc(nameof(SyncPosition), GlobalPosition);
     }
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion MouseMotion)
+
+        if (@event is InputEventMouseMotion mouseMotion)
         {
-            RotateY(Mathf.DegToRad(-MouseMotion.Relative.X * MouseSensitivity));
-            Camera.RotateX(Mathf.DegToRad(-MouseMotion.Relative.Y * MouseSensitivity));
+            RotateY(Mathf.DegToRad(-mouseMotion.Relative.X * MouseSensitivity));
+            Camera.RotateX(Mathf.DegToRad(-mouseMotion.Relative.Y * MouseSensitivity));
             Camera.Rotation = new Vector3(
                 Mathf.Clamp(Camera.Rotation.X, Mathf.DegToRad(-90), Mathf.DegToRad(90)),
                 Camera.Rotation.Y,
                 Camera.Rotation.Z);
+
+            Rpc(nameof(SyncRotation), Rotation, Camera.Rotation);
         }
     }
 
     public override void _Process(double delta)
     {
+        if (!IsMultiplayerAuthority())
+            return;
+
         if (Input.IsActionPressed("fire") && CanFire)
         {
             Fire();
@@ -92,5 +98,21 @@ public partial class CharacterMovement : CharacterBody3D
         GD.Print("Bang!"); // Replace with actual shooting logic later
         await ToSignal(GetTree().CreateTimer(FireRate), SceneTreeTimer.SignalName.Timeout);
         CanFire = true;
+    }
+
+    [Rpc]
+    private void SyncPosition(Vector3 position)
+    {
+        GlobalPosition = position;
+    }
+
+    [Rpc]
+    private void SyncRotation(Vector3 bodyRotation, Vector3 cameraRotation)
+    {
+        Rotation = bodyRotation;
+        if (Camera != null)
+        {
+            Camera.Rotation = cameraRotation;
+        }
     }
 }

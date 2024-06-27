@@ -62,5 +62,9 @@ layout_mode = 2
 placeholder_text = "Enter address to join here"
 alignment = 1
 
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://Scenes/character.tscn")
+spawn_path = NodePath("..")
+
 [connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton" to="." method="OnHostButtonPressed"]
 [connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton" to="." method="OnJoinButtonPressed"]

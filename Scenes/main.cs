@@ -34,67 +34,115 @@ public partial class main : Node
 
         hostButton.Pressed += OnHostButtonPressed;
         joinButton.Pressed += OnJoinButtonPressed;
+
+        Multiplayer.PeerConnected += PeerConnected;
+        Multiplayer.PeerDisconnected += PeerDisconnected;
+        Multiplayer.ConnectedToServer += ConnectedToServer;
+        Multiplayer.ConnectionFailed += ConnectionFailed;
+    }
+
+    private void ConnectionFailed()
+    {
+        GD.Print("Connection failed.");
+    }
+
+    private void ConnectedToServer()
+    {
+        GD.Print("Connected to server.");
+    }
+
+    private void PeerDisconnected(long id)
+    {
+        GD.Print("Player disconnected!" + id.ToString());
+    }
+
+    private void PeerConnected(long id)
+    {
+        GD.Print("Player connected!" + id.ToString());
     }
 
     private void OnHostButtonPressed()
     {
         GD.Print("Host button pressed");
+
+        if (isServerCreated)
+        {
+            GD.Print("Server already created");
+            return;
+        }
+
         mainMenu.Hide();
 
-        if (!isServerCreated)
+        enetPeer = new ENetMultiplayerPeer();
+        Error error = enetPeer.CreateServer(PORT);
+        if (error != Error.Ok)
         {
-            enetPeer.CreateServer(PORT);
-            Multiplayer.MultiplayerPeer = enetPeer;
-            isServerCreated = true;
+            GD.PrintErr($"Failed to create server. Error: {error}");
+            mainMenu.Show();
+            return;
         }
 
-        if (!isUpnpSetup)
-        {
-            UpnpSetup();
-            isUpnpSetup = true;
-        }
+        Multiplayer.MultiplayerPeer = enetPeer;
+        isServerCreated = true;
+        GD.Print($"Server created. Connect to: 127.0.0.1:{PORT}");
 
-        // Connect the event handlers if they are not already connected
         if (!isPeerConnectedHandlerConnected)
         {
-            Multiplayer.PeerConnected += AddPlayer;
+            Multiplayer.PeerConnected += (long id) => AddPlayer(id);
             isPeerConnectedHandlerConnected = true;
         }
 
         if (!isPeerDisconnectedHandlerConnected)
         {
-            Multiplayer.PeerDisconnected += RemovePlayer;
+            Multiplayer.PeerDisconnected += (long id) => RemovePlayer(id);
             isPeerDisconnectedHandlerConnected = true;
         }
 
-        // Initialize the player only once
-        if (!isPlayerInitialized)
-        {
-            AddPlayer(Multiplayer.GetUniqueId());
-            isPlayerInitialized = true;
-        }
+        AddPlayer((long)Multiplayer.GetUniqueId());
+        Rpc("StartGame");
     }
 
-    private void OnJoinButtonPressed()
+    private async void OnJoinButtonPressed()
     {
         GD.Print("Join button pressed");
+
+        //By removing the connection status check, you're allowing the game to proceed with the connection attempt regardless of the current connection status. This can be useful in scenarios where you want to allow multiple instances of the game to connect to the server, but it's important to ensure that the server and networking setup can handle multiple connections correctly.
+
         mainMenu.Hide();
-        enetPeer.CreateClient("localhost", PORT);
+
+        enetPeer = new ENetMultiplayerPeer();
+        GD.Print($"Attempting to connect to 127.0.0.1:{PORT}");
+        Error error = enetPeer.CreateClient("127.0.0.1", PORT);
+
+        if (error != Error.Ok)
+        {
+            GD.PrintErr($"Failed to create client. Error: {error}");
+            mainMenu.Show();
+            return;
+        }
+
+        GD.Print("Client created, setting MultiplayerPeer");
         Multiplayer.MultiplayerPeer = enetPeer;
+        Rpc("StartGame");
     }
 
-    private void AddPlayer(long PeerId)
+    private void AddPlayer(long peerId)
     {
+        if (!Multiplayer.IsServer())
+            return;
+
         try
         {
-            var Player = playerScene.Instantiate<CharacterMovement>();
-            if (Player != null)
+            var player = playerScene.Instantiate<CharacterMovement>();
+            if (player != null)
             {
-                GD.Print($"Instantiating player for peerId {PeerId}");
-                AddChild(Player);
-                Player.GlobalTransform = new Transform3D(Player.GlobalTransform.Basis, new Vector3(0, 10, 0));
-                GD.Print($"Player {PeerId} initial position: {Player.GlobalTransform.Origin}");
-                Player.Initialize();
+                GD.Print($"Instantiating player for peerId {peerId}");
+                player.Name = peerId.ToString();
+                player.SetMultiplayerAuthority((int)peerId);  // Cast long to int here
+                AddChild(player);
+                player.GlobalTransform = new Transform3D(player.GlobalTransform.Basis, new Vector3(0, 10, 0));
+                GD.Print($"Player {peerId} initial position: {player.GlobalTransform.Origin}");
+                player.Initialize();
             }
             else
             {
@@ -107,10 +155,19 @@ public partial class main : Node
         }
     }
 
-    private void RemovePlayer(long PeerId)
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void StartGame()
     {
-        var Player = GetNodeOrNull<Node>(PeerId.ToString());
-        Player?.QueueFree();
+        var scene = ResourceLoader.Load<PackedScene>("res://main.tscn").Instantiate<Node3D>();
+        GetTree().Root.AddChild(scene);
+    }
+
+
+
+    private void RemovePlayer(long peerId)
+    {
+        var player = GetNodeOrNull<Node>(peerId.ToString());
+        player?.QueueFree();
     }
 
     private void UpnpSetup()
@@ -118,13 +175,12 @@ public partial class main : Node
         var upnp = new Upnp();
 
         var discoverResult = upnp.Discover();
-        if (discoverResult != 0)  // 0 typically means success
+        if (discoverResult != 0)
         {
             GD.PrintErr($"UPNP Discover Failed! Error code: {discoverResult}");
             return;
         }
 
-        // Check if we have a valid gateway
         if (upnp.GetGateway() == null || !upnp.GetGateway().IsValidGateway())
         {
             GD.PrintErr("UPNP No Valid Gateway Found!");
@@ -132,7 +188,7 @@ public partial class main : Node
         }
 
         var mapResult = upnp.AddPortMapping(PORT);
-        if (mapResult != 0)  // 0 typically means success
+        if (mapResult != 0)
         {
             GD.PrintErr($"UPNP Port Mapping Failed! Error code: {mapResult}");
             return;
